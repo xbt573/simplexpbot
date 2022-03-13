@@ -35,12 +35,6 @@ public class Handlers
 
         Methods = new Methods();
         Translations = new Translations();
-
-        if (!(System.IO.File.Exists("access.txt"))) 
-        {
-            Process.Start("cp", "../access.txt .");
-        }
-
         Database = new Database("access.txt");
     }
 

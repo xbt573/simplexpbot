@@ -1,1 +1,1 @@
-worker: cd heroku_output && ./xpbot
+worker: ./heroku_output/xpbot 
