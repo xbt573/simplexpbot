@@ -48,6 +48,12 @@ public class Program
 		{"en", new string[] {"*XP*: ", "*Level*: "}}
 	};
 
+	public static Dictionary<string, string> noxp = new Dictionary<string, string>
+	{
+		{"ru", "Нет пользователей с опытом в базе :/"},
+		{"en", "No users with experience in database :/"}
+	};
+
 	// public static ReplyKeyboardMarkup languagekeyboard = new(new[]
 	// {
 	// 	new KeyboardButton[] {"Русский 🇷🇺"},
@@ -202,9 +208,24 @@ public class Program
 	    		await bot.SendTextMessageAsync(
 	    			chatId: chatId,
 	    			parseMode: ParseMode.MarkdownV2,
-	    			text: $"{getxpmessages[lang][0]}{GetXp(userId)}\n{getxpmessages[lang][1]}{GetLevel(userId)}",
+	    			text: $"{getxpmessages[lang][0]}{GetXp(userId, chatId)}\n{getxpmessages[lang][1]}{GetLevel(userId, chatId)}",
 	    			cancellationToken: cts,
 
+	    			replyToMessageId: messageId
+	    		);
+
+	    		break;
+
+	    	case "/top":
+	    		string? locallang = GetLang(chatId);
+	    		string top = await GetTop(bot, chatId, lang, cts);
+
+	    		await bot.SendTextMessageAsync(
+	    			chatId: chatId,
+	    			text: top,
+	    			cancellationToken: cts,
+
+	    			parseMode: ParseMode.MarkdownV2,
 	    			replyToMessageId: messageId
 	    		);
 
@@ -305,12 +326,13 @@ public class Program
 
 		cmd.CommandText = 
 		@"CREATE TABLE IF NOT EXISTS groups (
-			id BIGINT PRIMARY KEY,
+			id BIGINT,
 			lang DEFAULT 'en'
 		);
 
 		CREATE TABLE IF NOT EXISTS users (
-			id BIGINT PRIMARY KEY,
+			chatid BIGINT,
+			id BIGINT,
 			level INT,
 			xp INT
 		);";
@@ -431,7 +453,7 @@ public class Program
 	   	}
     }
 
-    public static void InsertUserIfNotExists(long userId)
+    public static void InsertUserIfNotExists(long userId, long chatId)
     {
     	using var conn = InitConnection(cs);
     	using var cmd = InitCommand(conn);
@@ -445,11 +467,13 @@ public class Program
 	    {
 	    	cmd.CommandText = 
 	    	@"INSERT INTO users VALUES (
+	    		@chatId,
 	    		@userId,
 	    		@level,
 	    		@xp
 	    	)";
 
+	    	cmd.Parameters.AddWithValue("@chatId", chatId);
 	    	cmd.Parameters.AddWithValue("@userId", userId);
 	    	cmd.Parameters.AddWithValue("@level", 0);
 	    	cmd.Parameters.AddWithValue("@xp", 0.0);
@@ -464,12 +488,12 @@ public class Program
     		return;
 
      	InsertGroupIfNotExists(chatId);
-     	InsertUserIfNotExists(userId);
+     	InsertUserIfNotExists(userId, chatId);
 
      	using var conn = InitConnection(cs);
     	using var cmd = InitCommand(conn);
 
-     	int? oldxp = GetXp(userId);
+     	int? oldxp = GetXp(userId, chatId);
 
      	if (oldxp == null)
      		oldxp = 0;
@@ -485,9 +509,9 @@ public class Program
      	cmd.ExecuteNonQuery();
     }
 
-    public static int? GetXp(long userId)
+    public static int? GetXp(long userId, long chatId)
     {
-    	InsertUserIfNotExists(userId);
+    	InsertUserIfNotExists(userId, chatId);
 
     	using var conn = InitConnection(cs);
     	using var cmd = InitCommand(conn);
@@ -505,9 +529,9 @@ public class Program
     	return xp;
     }
 
-    public static int? GetLevel(long userId)
+    public static int? GetLevel(long userId, long chatId)
     {
-    	InsertUserIfNotExists(userId);
+    	InsertUserIfNotExists(userId, chatId);
 
 		using var conn = InitConnection(cs);
     	using var cmd = InitCommand(conn);
@@ -523,5 +547,37 @@ public class Program
     	int? level = int.Parse(dbOut);
 
     	return level;    	
+    }
+
+    public static async Task<string> GetTop(ITelegramBotClient bot, long chatId, string lang, CancellationToken cts)
+    {
+    	using var conn = InitConnection(cs);
+    	using var cmd = InitCommand(conn);
+
+    	cmd.CommandText = @"SELECT * FROM users WHERE chatid=@chatId ORDER BY xp DESC LIMIT 5";
+    	cmd.Parameters.AddWithValue("@chatId", chatId);
+
+    	using var rdr = cmd.ExecuteReader();
+    	string top = "";
+
+    	if (lang == null)
+    		lang = "en";
+
+    	while (rdr.Read()) 
+    	{
+    		ChatMember chatMember = await bot.GetChatMemberAsync(chatId, rdr.GetInt64(1), cts);
+
+    		top += 
+    		@$"*{chatMember.User.Username}*:
+    			{getxpmessages[lang][1]}{rdr.GetInt32(2)}
+    			{getxpmessages[lang][0]}{rdr.GetInt32(3)}
+
+";
+    	}
+
+    	if (top == "")
+    		return noxp[lang];
+
+    	return top;
     }
 }
