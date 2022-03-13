@@ -178,15 +178,35 @@ public class Program
 	    		{
 	    			lang = command[1];
 
-	    			SetLang(chatId, lang);
+	    			if (update.Message.Chat.Type == ChatType.Private) 
+	    			{
+		    			SetLang(chatId, lang);
 
-	    			await bot.SendTextMessageAsync(
-	    				chatId: chatId,
-	    				text: languagechanged[lang],
-	    				cancellationToken: cts,
+		    			await bot.SendTextMessageAsync(
+		    				chatId: chatId,
+		    				text: languagechanged[lang],
+		    				cancellationToken: cts,
 
-	    				replyToMessageId: messageId
-	    			);
+		    				replyToMessageId: messageId
+		    			);
+	    			}
+	    			else 
+	    			{
+	    				ChatMember chatMember = await bot.GetChatMemberAsync(chatId, userId, cts);
+
+	    				if (chatMember.Status == ChatMemberStatus.Creator || chatMember.Status == ChatMemberStatus.Administrator) 
+	    				{
+	    					SetLang(chatId, lang);
+
+	    					await bot.SendTextMessageAsync(
+		    					chatId: chatId,
+		    					text: languagechanged[lang],
+		    					cancellationToken: cts,
+
+		    					replyToMessageId: messageId
+		    				);		
+	    				}
+	    			}
 	    		}
 	    		else
 	    		{
