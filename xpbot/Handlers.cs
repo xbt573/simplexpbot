@@ -3,7 +3,6 @@ using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types.Enums;
-using System.Diagnostics;
 
 /// <summary>
 /// Class for a update handling
@@ -35,6 +34,12 @@ public class Handlers
 
         Methods = new Methods();
         Translations = new Translations();
+
+        if (!(System.IO.File.Exists("database.db"))) 
+        {
+            System.IO.File.Create("database.db");
+        }
+
         Database = new Database("Data Source=database.db");
     }
 
