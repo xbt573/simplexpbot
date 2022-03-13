@@ -35,7 +35,7 @@ public class Handlers
 
         Methods = new Methods();
         Translations = new Translations();
-        Database = new Database(System.IO.File.ReadAllText("access.txt"));
+        Database = new Database("Data Source=database.db");
     }
 
 
