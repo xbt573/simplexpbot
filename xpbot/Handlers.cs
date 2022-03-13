@@ -3,6 +3,7 @@ using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types.Enums;
+using System.Diagnostics;
 
 /// <summary>
 /// Class for a update handling
@@ -35,18 +36,12 @@ public class Handlers
         Methods = new Methods();
         Translations = new Translations();
 
-        string filename;
-
-        if (System.IO.File.Exists("access.txt")) 
+        if (!(System.IO.File.Exists("access.txt"))) 
         {
-            filename = "access.txt";
-        }
-        else 
-        {
-            filename = "../access.txt";    
+            Process.Start("cp", "../access.txt .");
         }
 
-        Database = new Database(filename);
+        Database = new Database("access.txt");
     }
 
 
