@@ -568,7 +568,7 @@ public class Program
     		ChatMember chatMember = await bot.GetChatMemberAsync(chatId, rdr.GetInt64(1), cts);
 
     		top += 
-    		@$"*{chatMember.User.Username}*:
+    		@$"*{chatMember.User.FirstName} {chatMember.User.LastName}*:
     			{getxpmessages[lang][1]}{rdr.GetInt32(2)}
     			{getxpmessages[lang][0]}{rdr.GetInt32(3)}
 
