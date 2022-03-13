@@ -356,8 +356,8 @@ public class Program
 			Thread.Sleep(100);
 		}
 
-		Log.Information("Goodbye!");
-		cts.Cancel();
+		// Log.Information("Goodbye!");
+		// cts.Cancel();
     }
 
     public static string? GetLang(long chatId)
