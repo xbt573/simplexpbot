@@ -211,7 +211,7 @@ public class Program
 	    		break;
 
 	    	default:
-	    		AddXp(chatId, userId);
+	    		AddXp(chatId, userId, update.Message.Chat);
 	    		break;
 	    }
     }
@@ -458,8 +458,11 @@ public class Program
 	   	}
     }
     
-    public static void AddXp(long chatId, long userId)
+    public static void AddXp(long chatId, long userId, Chat chat)
     {
+    	if (chat.Type == ChatType.Private) 
+    		return;
+
      	InsertGroupIfNotExists(chatId);
      	InsertUserIfNotExists(userId);
 
