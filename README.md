@@ -14,7 +14,7 @@ dotnet run
 
 ## Deploying to Heroku
 *Ensure you use https://github.com/jincod/dotnetcore-buildpack buildpack!*
-Just deploy branch, and then launch worker from "*Resources*" tab
+Just deploy branch, add "*TOKEN*" config var with your bot token, and then launch worker from "*Resources*" tab
 
 ## Usage:
 
