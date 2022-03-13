@@ -351,7 +351,10 @@ public class Program
 
 		Log.Information("Bot started!");
 
-		Console.ReadLine();
+		while (true) 
+		{
+			Thread.Sleep(100);
+		}
 
 		Log.Information("Goodbye!");
 		cts.Cancel();
