@@ -1,1 +1,1 @@
-worker: dotnet run
+worker: cd heroku_output && ./xpbot
