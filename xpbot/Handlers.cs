@@ -34,7 +34,19 @@ public class Handlers
 
         Methods = new Methods();
         Translations = new Translations();
-        Database = new Database(System.IO.File.ReadAllText("access.txt"));
+
+        string filename;
+
+        if (System.IO.File.Exists("access.txt")) 
+        {
+            filename = "access.txt";
+        }
+        else 
+        {
+            filename = "../access.txt";    
+        }
+
+        Database = new Database(filename);
     }
 
 
