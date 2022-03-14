@@ -35,7 +35,7 @@ public class Handlers
         Methods = new Methods();
         Translations = new Translations();
 
-        if (!(System.IO.File.Exists("database.db"))) 
+        if (!(System.IO.File.Exists("database.db")))
         {
             System.IO.File.Create("database.db");
         }
@@ -49,17 +49,17 @@ public class Handlers
     /// </summary>
     public async Task HandleUpdatesAsync(ITelegramBotClient bot, Update update, CancellationToken cts)
     {
-        if (update.Type == UpdateType.Message) 
+        if (update.Type == UpdateType.Message)
         {
             await ProcessMessage(bot, update, cts);
         }
-        else if (update.Type == UpdateType.CallbackQuery) 
+        else if (update.Type == UpdateType.CallbackQuery)
         {
             await ProcessCallback(bot, update, cts);
         }
-        else 
+        else
         {
-            return;    
+            return;
         }
     }
 
@@ -69,9 +69,9 @@ public class Handlers
     public async Task ProcessMessage(ITelegramBotClient bot, Update update, CancellationToken cts)
     {
         // Check if message is null
-        if (update.Message == null) 
+        if (update.Message == null)
             return;
-        
+
         if (update.Message.From == null)
             return;
 
@@ -104,83 +104,16 @@ public class Handlers
         {
             case "/help": goto case "/start";
             case "/start":
-                await bot.SendTextMessageAsync(
-                    chatId: chatId,
-                    text: Translations.HelpCommand[lang],
-                    cancellationToken: cts,
-                    replyToMessageId: messageId
-                );
-                break;
+                await Start(chatId, messageId, lang, cts, bot); break;
 
             case "/xp":
-                int xp = Database.GetXp(userId, chatId);
-                int level = (int)(xp/100);
-
-                await bot.SendTextMessageAsync(
-                    chatId: chatId,
-                    text: $"*{Translations.Level[lang]}*: {level}\n*{Translations.XP[lang]}*: {xp}",
-                    parseMode: ParseMode.MarkdownV2,
-                    cancellationToken: cts,
-                    replyToMessageId: messageId
-                );
-
-                break;
+                await Xp(chatId, userId, messageId, lang, cts, bot); break;
 
             case "/lang":
-                if (command.Length == 1) 
-                {
-                    await bot.SendTextMessageAsync(
-                        chatId: chatId,
-                        text: Translations.KeyboardLangCommand[lang],
-                        replyToMessageId: messageId,
-                        replyMarkup: Translations.LangChangeMarkup
-                    );
-                }
-                else 
-                {
-                    if (command[1] == "en" || command[1] == "ru") 
-                    {
-                        ChatMember chatMember = await bot.GetChatMemberAsync(chatId, userId);
-
-                        if (update.Message.Chat.Type == ChatType.Private) 
-                        {
-                            Database.SetLang(command[1], chatId);
-
-                            await bot.SendTextMessageAsync(
-                                chatId: chatId,
-                                text: Translations.LanguageChanged[command[1]],
-                                cancellationToken: cts,
-
-                                replyToMessageId: messageId
-                            );
-
-                            break;
-                        }
-
-                        if (chatMember.Status == ChatMemberStatus.Administrator || chatMember.Status == ChatMemberStatus.Creator) 
-                        {
-                            Database.SetLang(command[1], chatId);
-                            await bot.SendTextMessageAsync(
-                                chatId: chatId,
-                                text: Translations.LanguageChanged[command[1]],
-                                cancellationToken: cts,
-
-                                replyToMessageId: messageId
-                            );
-                        }
-                    }
-                }
-
-                break;
+                await Lang(chatId, userId, messageId, update.Message.Chat.Type, lang, command, cts, bot); break;
 
             case "/top":
-                await bot.SendTextMessageAsync(
-                    chatId: chatId,
-                    text: await Database.GetTop(bot, chatId, lang, cts),
-                    parseMode: ParseMode.MarkdownV2,
-                    replyToMessageId: messageId
-                );
-                break;
+                await Top(chatId, messageId, lang, cts, bot); break;
 
             default:
                 Database.AddXp(userId, chatId, Methods.GetRandom());
@@ -188,9 +121,9 @@ public class Handlers
         }
     }
 
-    public async Task ProcessCallback(ITelegramBotClient bot, Update update, CancellationToken cts) 
+    public async Task ProcessCallback(ITelegramBotClient bot, Update update, CancellationToken cts)
     {
-        if (update.CallbackQuery == null) 
+        if (update.CallbackQuery == null)
             return;
 
         if (update.CallbackQuery.Data == null)
@@ -202,12 +135,12 @@ public class Handlers
         bool russian = update.CallbackQuery.Data == "ru";
         bool english = update.CallbackQuery.Data == "en";
 
-        if (russian || english) 
+        if (russian || english)
         {
             long chatId = update.CallbackQuery.Message.Chat.Id;
             long userId = update.CallbackQuery.From.Id;
 
-            if (update.CallbackQuery.Message.Chat.Type == ChatType.Private) 
+            if (update.CallbackQuery.Message.Chat.Type == ChatType.Private)
             {
                 Database.SetLang(update.CallbackQuery.Data, update.CallbackQuery.Message.Chat.Id);
 
@@ -222,7 +155,7 @@ public class Handlers
 
             ChatMember chatMember = await bot.GetChatMemberAsync(chatId, userId);
 
-            if (chatMember.Status == ChatMemberStatus.Administrator || chatMember.Status == ChatMemberStatus.Creator) 
+            if (chatMember.Status == ChatMemberStatus.Administrator || chatMember.Status == ChatMemberStatus.Creator)
             {
                 Database.SetLang(update.CallbackQuery.Data, update.CallbackQuery.Message.Chat.Id);
 
@@ -232,7 +165,7 @@ public class Handlers
                     cancellationToken: cts
                 );
             }
-            else 
+            else
             {
                 await bot.AnswerCallbackQueryAsync(
                     callbackQueryId: update.CallbackQuery.Id,
@@ -260,4 +193,92 @@ public class Handlers
         return Task.CompletedTask;
     }
 
+    public async Task Help(long chatId, int messageId, string lang, CancellationToken cts, ITelegramBotClient bot)
+    {
+        await Start(chatId, messageId, lang, cts, bot);
+    }
+
+    public async Task Start(long chatId, int messageId, string lang, CancellationToken cts, ITelegramBotClient bot)
+    {
+        await bot.SendTextMessageAsync(
+                    chatId: chatId,
+                    text: Translations.HelpCommand[lang],
+                    cancellationToken: cts,
+                    replyToMessageId: messageId
+        );
+    }
+
+    public async Task Xp(long chatId, long userId, int messageId, string lang, CancellationToken cts, ITelegramBotClient bot)
+    {
+        int xp = Database.GetXp(userId, chatId);
+        int level = (int)(xp / 100);
+
+        await bot.SendTextMessageAsync(
+            chatId: chatId,
+            text: $"*{Translations.Level[lang]}*: {level}\n*{Translations.XP[lang]}*: {xp}",
+            parseMode: ParseMode.MarkdownV2,
+            cancellationToken: cts,
+            replyToMessageId: messageId
+        );
+    }
+
+    public async Task Lang(long chatId, long userId, int messageId, ChatType chatType, string lang, string[] command, CancellationToken cts, ITelegramBotClient bot)
+    {
+        if (command.Length == 1)
+        {
+            await bot.SendTextMessageAsync(
+                chatId: chatId,
+                text: Translations.KeyboardLangCommand[lang],
+                replyToMessageId: messageId,
+                replyMarkup: Translations.LangChangeMarkup
+            );
+
+            return;
+        }
+
+        bool en = command[1].Contains("en");
+        bool ru = command[1].Contains("ru");
+
+        bool commandlang = en || ru;
+
+        ChatMember chatMember = await bot.GetChatMemberAsync(chatId, userId);
+
+        if (chatType == ChatType.Private)
+        {
+            Database.SetLang(command[1], chatId);
+
+            await bot.SendTextMessageAsync(
+                chatId: chatId,
+                text: Translations.LanguageChanged[command[1]],
+                cancellationToken: cts,
+
+                replyToMessageId: messageId
+            );
+
+            return;
+        }
+
+        if (chatMember.Status == ChatMemberStatus.Administrator || chatMember.Status == ChatMemberStatus.Creator)
+        {
+            Database.SetLang(command[1], chatId);
+            await bot.SendTextMessageAsync(
+                chatId: chatId,
+                text: Translations.LanguageChanged[command[1]],
+                cancellationToken: cts,
+
+                replyToMessageId: messageId
+            );
+        }
+
+    }
+
+    public async Task Top(long chatId, int messageId, string lang, CancellationToken cts, ITelegramBotClient bot)
+    {
+        await bot.SendTextMessageAsync(
+                    chatId: chatId,
+                    text: await Database.GetTop(bot, chatId, lang, cts),
+                    parseMode: ParseMode.MarkdownV2,
+                    replyToMessageId: messageId
+        );
+    }
 }
