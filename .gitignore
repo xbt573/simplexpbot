@@ -458,3 +458,6 @@ $RECYCLE.BIN/
 
 # netcoredbg history
 .netcoredbg_hist*
+
+# Migrations
+[Mm]igrations/

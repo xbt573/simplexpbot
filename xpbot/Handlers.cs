@@ -19,11 +19,6 @@ public class Handlers
     /// </summary>
     public Translations Translations { get; set; }
 
-    /// <summary>
-    /// Database class property
-    /// </summary>
-    public Database Database { get; set; }
-
     public Handlers()
     {
         // Init logger
@@ -34,13 +29,6 @@ public class Handlers
 
         Methods = new Methods();
         Translations = new Translations();
-
-        if (!(System.IO.File.Exists("database.db")))
-        {
-            System.IO.File.Create("database.db");
-        }
-
-        Database = new Database("Data Source=database.db");
     }
 
 
@@ -89,6 +77,8 @@ public class Handlers
         //     return;
         // }
 
+
+        // TODO: Fix @
         // Processing command
         if (command[0].Contains("@"))
             // Delete bot tag from command
@@ -98,10 +88,11 @@ public class Handlers
         long userId = update.Message.From.Id;
         int messageId = update.Message.MessageId;
 
-        string lang = Database.GetLang(chatId);
+        string lang = Methods.GetLang(chatId);
 
         switch (command[0])
         {
+            // TODO: Add manual
             case "/help": goto case "/start";
             case "/start":
                 await Start(chatId, messageId, lang, cts, bot); break;
@@ -116,7 +107,7 @@ public class Handlers
                 await Top(chatId, messageId, lang, cts, bot); break;
 
             default:
-                Database.AddXp(userId, chatId, Methods.GetRandom());
+                Methods.AddXp(userId, chatId, Methods.GetRandom());
                 break;
         }
     }
@@ -142,7 +133,7 @@ public class Handlers
 
             if (update.CallbackQuery.Message.Chat.Type == ChatType.Private)
             {
-                Database.SetLang(update.CallbackQuery.Data, update.CallbackQuery.Message.Chat.Id);
+                Methods.SetLang(update.CallbackQuery.Message.Chat.Id, update.CallbackQuery.Data);
 
                 await bot.AnswerCallbackQueryAsync(
                     callbackQueryId: update.CallbackQuery.Id,
@@ -157,7 +148,7 @@ public class Handlers
 
             if (chatMember.Status == ChatMemberStatus.Administrator || chatMember.Status == ChatMemberStatus.Creator)
             {
-                Database.SetLang(update.CallbackQuery.Data, update.CallbackQuery.Message.Chat.Id);
+                Methods.SetLang(update.CallbackQuery.Message.Chat.Id, update.CallbackQuery.Data);
 
                 await bot.AnswerCallbackQueryAsync(
                     callbackQueryId: update.CallbackQuery.Id,
@@ -210,7 +201,7 @@ public class Handlers
 
     public async Task Xp(long chatId, long userId, int messageId, string lang, CancellationToken cts, ITelegramBotClient bot)
     {
-        int xp = Database.GetXp(userId, chatId);
+        int xp = Methods.GetSumXp(userId);
         int level = (int)(xp / 100);
 
         await bot.SendTextMessageAsync(
@@ -245,7 +236,7 @@ public class Handlers
 
         if (chatType == ChatType.Private)
         {
-            Database.SetLang(command[1], chatId);
+            Methods.SetLang(chatId, command[1]);
 
             await bot.SendTextMessageAsync(
                 chatId: chatId,
@@ -260,7 +251,7 @@ public class Handlers
 
         if (chatMember.Status == ChatMemberStatus.Administrator || chatMember.Status == ChatMemberStatus.Creator)
         {
-            Database.SetLang(command[1], chatId);
+            Methods.SetLang(chatId, command[1]);
             await bot.SendTextMessageAsync(
                 chatId: chatId,
                 text: Translations.LanguageChanged[command[1]],
@@ -276,7 +267,7 @@ public class Handlers
     {
         await bot.SendTextMessageAsync(
                     chatId: chatId,
-                    text: await Database.GetTop(bot, chatId, lang, cts),
+                    text: await Methods.GetTop(bot, chatId, lang, cts),
                     parseMode: ParseMode.MarkdownV2,
                     replyToMessageId: messageId
         );
