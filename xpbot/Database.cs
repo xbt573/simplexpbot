@@ -22,20 +22,24 @@ public class BotDbContext : DbContext
 
     protected override void OnConfiguring(DbContextOptionsBuilder options)
         => options.UseNpgsql(_dbAccess);
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<User>()
+            .HasKey(c => new { c.id, c.chatId });
+    }
 }
 
 public class User
 {
-    public long id { get; set; }
+    public long id { get; set; }   
     public long chatId { get; set; }
     public int xp { get; set; }
     public int level { get; set; }
-
-    public int sumXp { get; set; }
 }
 
 public class Group
 {
     public long id { get; set; }
-    public string lang { get; set; }
+    public string? lang { get; set; }
 }

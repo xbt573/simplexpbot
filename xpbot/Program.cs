@@ -28,7 +28,7 @@ public class Program
 
         string? token = methods.GetToken();
 
-        if (token == null) 
+        if (token == null)
         {
             Log.Fatal("TOKEN variable not found in environment.");
             throw new InvalidDataException("TOKEN variable not found in environment.");
@@ -54,7 +54,7 @@ public class Program
         Log.Information("Bot started!");
 
         // Infinite loop
-        while (true) 
+        while (true)
         {
             Thread.Sleep(100);
         }

@@ -29,11 +29,6 @@ public class Handlers
 
         Methods = new Methods();
         Translations = new Translations();
-
-        if (!(System.IO.File.Exists("database.db")))
-        {
-            System.IO.File.Create("database.db");
-        }
     }
 
 
@@ -82,6 +77,8 @@ public class Handlers
         //     return;
         // }
 
+
+        // TODO: Fix @
         // Processing command
         if (command[0].Contains("@"))
             // Delete bot tag from command
@@ -95,6 +92,7 @@ public class Handlers
 
         switch (command[0])
         {
+            // TODO: Add manual
             case "/help": goto case "/start";
             case "/start":
                 await Start(chatId, messageId, lang, cts, bot); break;
@@ -203,7 +201,7 @@ public class Handlers
 
     public async Task Xp(long chatId, long userId, int messageId, string lang, CancellationToken cts, ITelegramBotClient bot)
     {
-        int xp = Methods.GetXp(userId);
+        int xp = Methods.GetSumXp(userId);
         int level = (int)(xp / 100);
 
         await bot.SendTextMessageAsync(

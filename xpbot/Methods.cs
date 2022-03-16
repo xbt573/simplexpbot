@@ -63,6 +63,7 @@ public class Methods
             .Where(x => x.id == chatId)
             .FirstOrDefault();
 
+        // TODO: Set EN as default value
         if (group == null)
         {
             SetLang(chatId, "en");
@@ -89,6 +90,9 @@ public class Methods
             db.Groups.Add(
                 new Group { id = chatId, lang = lang }
             );
+
+            db.SaveChanges();
+
             return;
         }
 
@@ -99,23 +103,41 @@ public class Methods
     }
 
     /// <summary>
-    /// Function for getting user xp
+    /// Function for getting sum of user xp in all groups
     /// </summary>
-    public int GetXp(long userId)
+    public int GetSumXp(long userId)
+    {
+        using var db = new BotDbContext();
+        db.Database.EnsureCreated();
+
+        var xp = db.Users
+            .Where(x => x.id == userId)
+            .Sum(x => x.xp);
+
+        return xp;
+    }
+
+    /// <summary>
+    /// Function for getting user xp in specified group
+    /// </summary>
+    public int GetXp(long userId, long chatId)
     {
         using var db = new BotDbContext();
         db.Database.EnsureCreated();
 
         var user = db.Users
             .Where(x => x.id == userId)
+            .Where(x => x.chatId == chatId)
             .FirstOrDefault();
 
-        if (user == null)
+
+        if (user == null) 
         {
+            SetXp(userId, chatId, 0);
             return 0;
         }
 
-        return user.sumXp;
+        return user.xp;
     }
 
     /// <summary>
@@ -136,19 +158,15 @@ public class Methods
             int sumXp = db.Users.Where(x => x.id == userId).Sum(x => x.xp);
 
             db.Users.Add(
-                new User { id = userId, chatId = chatId, xp = xp, level = (int)(xp / 100), sumXp = sumXp }
+                new User { id = userId, chatId = chatId, xp = xp, level = (int)(xp / 100) }
             );
+
+            db.SaveChanges();
 
             return;
         }
 
         user.xp = xp;
-
-        user.sumXp = db.Users
-            .Where(x => x.id == userId)
-            .Select(x => x.xp)
-            .Sum();
-
         user.level = (int)(xp / 100);
 
         db.Users.Update(user);
@@ -161,7 +179,7 @@ public class Methods
     /// </summary>
     public void AddXp(long userId, long chatId, int addedxp)
     {
-        int oldxp = GetXp(userId);
+        int oldxp = GetXp(userId, chatId);
 
         int newxp = oldxp + addedxp;
         SetXp(userId, chatId, newxp);
@@ -175,27 +193,48 @@ public class Methods
         using var db = new BotDbContext();
         await db.Database.EnsureCreatedAsync();
 
-        var xpTop = db.Users
+        var users = db.Users
             .Where(x => x.chatId == chatId)
             .Select(x => new {
-                Id = x.id,
-                Level = x.level,
-                XpSum = x.sumXp
+                Id = x.id
             })
-            .OrderByDescending(x => x.XpSum)
             .ToList();
 
-        string top = "";
-
-        foreach (var user in xpTop)
+        List<UserXp> userXp = new List<UserXp>();
+        foreach (var user in users) 
         {
-            ChatMember chatMember = await bot.GetChatMemberAsync(chatId, user.Id, cts);
+            userXp.Add(db.Users
+                .Where(x => x.id == user.Id)
+                .Select(x => new UserXp {
+                    Id = x.id,
+                    ChatId = x.chatId,
+                    SumXp = db.Users
+                        .Where(x => x.id == user.Id)
+                        .Sum(x => x.xp)
+                })
+                .FirstOrDefault());
+        }
+
+        userXp = userXp.OrderByDescending(x => x.SumXp).ToList();
+
+        int i = 0;
+
+        ChatMember chatMember;
+
+        string top = "";
+        foreach (var user in userXp)
+        {
+            chatMember = await bot.GetChatMemberAsync(chatId, user.Id, cts);
 
             top += 
             @$"*{chatMember.User.FirstName} {chatMember.User.LastName}*:
-                *{Translations.Level[lang]}*: {user.Level}
-                *{Translations.XP[lang]}*: {user.XpSum}
+                *{Translations.Level[lang]}*: {(int)(user.SumXp / 100)}
+                *{Translations.XP[lang]}*: {user.SumXp}
 ";
+            if (i > 5)
+                break;
+
+            i++;
         }
 
         if (top == "")
@@ -203,4 +242,11 @@ public class Methods
 
         return top;
     }
+}
+
+public class UserXp
+{
+    public long Id { get; set; }
+    public long ChatId { get; set; }
+    public int SumXp { get; set; }
 }
